@@ -79,6 +79,7 @@ export default {
     overflow: auto;
 }
 .sender {
+    margin-right: 5px;
     align-self: flex-end;
     background-color: #dcf8c6;
 }
