@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Welcome from '../views/Welcome.vue'
+import ChatGroups from '../views/ChatGroups.vue'
 import Chatroom from '../views/Chatroom.vue'
 import { projectAuth } from '../firebase/config'
 
@@ -34,6 +35,18 @@ const routes = [
     name: 'Chatroom',
     component: Chatroom,
     beforeEnter: requireAuth
+  },
+  { path: '/chatgroups', 
+    name: 'ChatGroups', 
+    component: ChatGroups,
+    beforeEnter: requireAuth
+  },
+  {
+  path: '/chatgroups/:groupId',
+  name: 'Chatroom',
+  component: Chatroom,
+  props: true,
+  beforeEnter: requireAuth
   }
 ]
 

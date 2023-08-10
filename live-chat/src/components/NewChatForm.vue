@@ -14,16 +14,21 @@ import { ref } from 'vue'
 import getUser from '../composables/getUser'
 import useCollection from '../composables/useCollection'
 import { timestamp } from '../firebase/config'
+import { useRouter } from 'vue-router'
 
 export default {
-    setup() {
+     props: {
+    groupId: String, // Add a prop to receive the groupId from the parent component
+  },
+    setup(props) {
         const { user } = getUser()
         const { addDoc, error } = useCollection('messages')
-
+        const router = useRouter()
         const message = ref('')
 
         const handleSubmit = async () => {
             const chat = {
+                groupId: props.groupId,
                 name: user.value.displayName,
                 message: message.value,
                 createdAt: timestamp()

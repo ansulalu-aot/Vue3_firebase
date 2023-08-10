@@ -1,10 +1,12 @@
 <template>
   <div class="chat-window">
     <div v-if="error">{{ error }}</div>
-    <div v-if="documents" class="messages" ref="messages">
-      <div v-for="doc in formattedDocuments" :key="doc.id">
+    <div v-if="groupMessages" class="messages" ref="messages">
+      <div v-for="doc in groupMessages" :key="doc.id">
         <div class="message-container">
-          <div :class="['single', { 'sender': doc.isSender, 'receiver': !doc.isSender }]">
+          <div
+            :class="['single', { 'sender': doc.isSender, 'receiver': !doc.isSender }]"
+          >
             <span class="created-at">{{ doc.createdAt }}</span>
             <span class="name">{{ doc.name }}</span>
             <span class="message">{{ doc.message }}</span>
@@ -16,35 +18,46 @@
 </template>
 
 <script>
-import getCollection from '../composables/getCollection'
-import { formatDistanceToNow } from 'date-fns'
 import { computed, onUpdated, ref } from 'vue'
+import { formatDistanceToNow } from 'date-fns'
+import { useRouter } from 'vue-router'
+import useCollection from '../composables/useCollection'
 import getUser from '../composables/getUser'
 
 export default {
-    setup() {
-        const { error, documents } = getCollection('messages')
-        const { user } = getUser()
+    props: {
+    groupId: String, // Add a prop to receive the groupId from the parent component
+  },
+  setup(props) {
+    // const router = useRouter()
+    const { user } = getUser()
+    // console.log('Router Params:', router.params)
 
-        const formattedDocuments = computed(() => {
-            if(documents.value) {
-                return documents.value.map(doc => {
-                    let time = formatDistanceToNow(doc.createdAt.toDate())
-                    const isSender = doc.name === user.value.displayName
-                    return { ...doc, createdAt: time, isSender: isSender }
-                })
-            }
+    // Get groupId from the route parameters
+    const groupId = props.groupId
+    console.log('groupId:', groupId);
+    // Use the useCollection utility to fetch messages for the specified group
+    const { error, documents } = useCollection(`chatgroups/${groupId}/messages`)
+
+    // Computed property to filter and format messages based on groupId
+    const groupMessages = computed(() => {
+      if (documents.value) {
+        return documents.value.map(doc => {
+          let time = formatDistanceToNow(doc.createdAt.toDate())
+          const isSender = doc.name === user.value.displayName
+          return { ...doc, createdAt: time, isSender: isSender }
         })
+      }
+    })
 
-        // auto-scroll to bottom of messages
-        const messages = ref(null)
+    // Auto-scroll to bottom of messages
+    const messages = ref(null)
+    onUpdated(() => {
+      messages.value.scrollTop = messages.value.scrollHeight
+    })
 
-        onUpdated(() => {
-            messages.value.scrollTop = messages.value.scrollHeight
-        })
-
-        return { error, documents, formattedDocuments, messages }
-    }
+    return { error, documents, groupMessages, messages }
+  }
 }
 </script>
 
@@ -79,6 +92,7 @@ export default {
     overflow: auto;
 }
 .sender {
+    margin-right: 5px;
     align-self: flex-end;
     background-color: #dcf8c6;
 }

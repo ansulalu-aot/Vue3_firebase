@@ -2,7 +2,7 @@
   <div class="container">
     <Navbar />
     <ChatWindow />
-    <NewChatForm />
+    <NewChatForm :groupId="groupId" />
   </div>
 </template>
 
