@@ -26,7 +26,7 @@ import getUser from '../composables/getUser'
 
 export default {
     props: {
-    groupId: String, // Add a prop to receive the groupId from the parent component
+    groupId: String,
   },
   setup(props) {
     // const router = useRouter()
