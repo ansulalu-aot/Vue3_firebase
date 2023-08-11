@@ -1,7 +1,7 @@
 import { ref, watchEffect } from 'vue'
 import { projectFirestore } from '../firebase/config'
 
-const useCollection = (collection) => {
+const useCollection = (parentCollection, subCollection) => {
     const documents = ref([])
     const error = ref(null)
 
@@ -9,14 +9,18 @@ const useCollection = (collection) => {
         error.value = null
 
         try {
-            await projectFirestore.collection(collection).add(doc)
+            await projectFirestore.collection(parentCollection)
+                .doc(doc.groupId)
+                .collection(subCollection)
+                .add(doc)
         } catch (err) {
             console.log(err.message)
             error.value = 'could not send the message'
         }
     }
 
-    let collectionRef = projectFirestore.collection(collection).orderBy('createdAt')
+    let collectionRef = projectFirestore.collection(parentCollection)
+        .orderBy('createdAt')
     console.log('Collection Reference:', collectionRef)
 
     const unsub = collectionRef.onSnapshot((snap) => {

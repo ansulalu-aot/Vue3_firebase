@@ -10,9 +10,9 @@ import { projectAuth } from './firebase/config'
 let app
 
 projectAuth.onAuthStateChanged(() => {
-    if(!app) {
+    if (!app) {
         app = createApp(App)
-        .use(router)
-        .mount('#app')
+            .use(router)
+            .mount('#app')
     }
 })

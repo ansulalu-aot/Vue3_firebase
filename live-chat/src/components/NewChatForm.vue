@@ -1,63 +1,61 @@
 <template>
   <form>
     <textarea
-        placeholder="Type a message and hit enter to send..."
-        v-model="message" 
-        @keypress.enter.prevent="handleSubmit"     
+      placeholder="Type a message and hit enter to send..."
+      v-model="message"
+      @keypress.enter.prevent="handleSubmit"
     ></textarea>
     <div class="error">{{ error }}</div>
   </form>
 </template>
 
 <script>
-import { ref } from 'vue'
-import getUser from '../composables/getUser'
-import useCollection from '../composables/useCollection'
-import { timestamp } from '../firebase/config'
-import { useRouter } from 'vue-router'
+import { ref } from "vue";
+import getUser from "../composables/getUser";
+import useCollection from "../composables/useCollection";
+import { timestamp } from "../firebase/config";
 
 export default {
-     props: {
-    groupId: String, // Add a prop to receive the groupId from the parent component
+  props: {
+    groupId: String,
   },
-    setup(props) {
-        const { user } = getUser()
-        const { addDoc, error } = useCollection('messages')
-        const router = useRouter()
-        const message = ref('')
+  setup(props) {
+    const { user } = getUser();
+    const { addDoc, error } = useCollection("chatGroups", "messages");
+    const message = ref("");
 
-        const handleSubmit = async () => {
-            const chat = {
-                groupId: props.groupId,
-                name: user.value.displayName,
-                message: message.value,
-                createdAt: timestamp()
-            }
+    const handleSubmit = async () => {
+      const chat = {
+        groupId: props.groupId,
+        name: user.value.displayName,
+        message: message.value,
+        createdAt: timestamp(),
+      };
 
-            await addDoc(chat)
-            if(!error.value) {
-                message.value = ''
-            }
-        }
+      await addDoc(chat);
+      if (!error.value) {
+        message.value = "";
+      }
+    };
 
-        return { message, handleSubmit, error }
-    }
-}
+    return { message, handleSubmit, error };
+  },
+};
 </script>
 
 <style scoped>
 form {
-    margin: 10px;
+  margin: 10px;
 }
 textarea {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: 6px;
-    padding: 10px;
-    box-sizing: border-box;
-    border: 0;
-    border-radius: 20px;
-    font-family: inherit;
-    outline: none;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 6px;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 20px;
+  font-family: inherit;
+  outline: none;
 }
 </style>
