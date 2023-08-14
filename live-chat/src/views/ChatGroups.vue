@@ -1,11 +1,11 @@
 <template>
   <div class="container">
     <Navbar />
-    <h2>Chat Groups</h2>
+    <h2><u>Chat Groups</u></h2>
     <ul>
       <li v-for="group in chatGroups" :key="group.id">
         <router-link
-          :to="{ name: 'Chatroom', params: { groupId: group.id } }"
+          :to="{ name: 'Chatroom', params: { groupId: group.id } }" class="custom-link"
           >{{ group.name }}</router-link
         >
       </li>
@@ -45,5 +45,14 @@ export default {
 <style>
 h2 {
   text-align: center;
+}
+li {
+  list-style: none;
+  padding-bottom: 15px;  
+}
+.custom-link {
+  text-decoration: none;
+  color: black;
+
 }
 </style>

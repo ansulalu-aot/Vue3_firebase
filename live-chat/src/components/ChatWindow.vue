@@ -2,6 +2,7 @@
   <div class="chat-window">
     <button @click="goBack">Go Back</button>
     <div v-if="error">{{ error }}</div>
+    <h2><u>{{ groupName }}</u></h2>
     <div v-if="groupMessages" class="messages" ref="messages">
       <div v-for="doc in groupMessages" :key="doc.id">
         <div class="message-container">
@@ -27,6 +28,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "vue-router";
 import useCollection from "../composables/useCollection";
 import getUser from "../composables/getUser";
+import { projectFirestore } from "../firebase/config";
 
 export default {
   props: {
@@ -40,6 +42,19 @@ export default {
     const { error, documents } = useCollection(
       `chatGroups/${props.groupId}/messages`
     );
+
+    // Get the group name based on groupId
+    const groupName = ref("");
+
+    const getGroupName = async () => {
+      const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
+      const groupSnapshot = await groupRef.get();
+      if (groupSnapshot.exists) {
+        groupName.value = groupSnapshot.data().name;
+      }
+    };
+
+    getGroupName(); // Call the function to get the group name
 
     // Computed property to filter and format messages based on groupId
     const groupMessages = computed(() => {
@@ -64,7 +79,7 @@ export default {
       router.back();
     };
 
-    return { error, groupMessages, messages, goBack };
+    return { error, groupName, groupMessages, messages, goBack };
   },
 };
 </script>
