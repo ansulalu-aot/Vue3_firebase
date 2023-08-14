@@ -4,41 +4,45 @@
     <div v-if="showLogin">
       <h2>Login</h2>
       <LoginForm @login="enterChat" />
-      <p>No account yet? <span @click="showLogin = false">Signup</span> instead</p>
+      <p>
+        No account yet? <span @click="showLogin = false">Signup</span> instead
+      </p>
     </div>
     <div v-else>
       <h2>Sign up</h2>
       <SignupForm @signup="enterChat" />
-      <p>Already registered? <span @click="showLogin = true">Login</span> instead</p>
+      <p>
+        Already registered? <span @click="showLogin = true">Login</span> instead
+      </p>
     </div>
   </div>
 </template>
 
 <script>
-import SignupForm from '../components/SignupForm.vue'
-import LoginForm from '../components/LoginForm.vue'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import SignupForm from "../components/SignupForm.vue";
+import LoginForm from "../components/LoginForm.vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 export default {
   components: { SignupForm, LoginForm },
   setup() {
-    const showLogin = ref(true)
-    const router = useRouter()
+    const showLogin = ref(true);
+    const router = useRouter();
 
     const enterChat = () => {
-      router.push({ name: 'ChatGroups' })
-    }
+      router.push({ name: "ChatGroups" });
+    };
 
-    return { showLogin, enterChat }
-  }
-}
+    return { showLogin, enterChat };
+  },
+};
 </script>
 
 <style>
 .welcome {
-    text-align: center;
-    padding: 20px 0;
+  text-align: center;
+  padding: 20px 0;
 }
 .welcome form {
   width: 300px;

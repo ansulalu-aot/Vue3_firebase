@@ -8,18 +8,19 @@ const getCollection = (collection) => {
     let collectionRef = projectFirestore.collection(collection)
         .orderBy('createdAt')
     console.log('Collection Reference:', collectionRef);
+
     const unsub = collectionRef.onSnapshot((snap) => {
         console.log('snapshot')
         let results = []
         snap.docs.forEach(doc => {
             doc.data().createdAt && results.push({ ...doc.data(), id: doc.id })
         })
-        documents.value =  results
+        documents.value = results
         error.value = null
         console.log('Documents:', documents.value)
     }, (err) => {
         console.log(err.message)
-        error.value  = 'could not fetch data'
+        error.value = 'could not fetch data'
     })
 
     watchEffect((onValidate) => {
