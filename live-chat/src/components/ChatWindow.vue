@@ -1,8 +1,19 @@
 <template>
   <div class="chat-window">
     <button @click="goBack">Go Back</button>
+    <div v-if="isSuperAdmin">
+      <input type="radio" v-model="isPrivate" :value="false" @click="updateIsPrivate(false)" /> Public
+      <input type="radio" v-model="isPrivate" :value="true" @click="updateIsPrivate(true)" /> Private
+      <div v-if="isPrivate">
+        <label for="permissionEmails">Enter permission email IDs : </label>
+        <input type="text" id="permissionEmails" v-model="permissionEmails" />
+        <button @click="updateGroupPrivacy">Update Group Privacy</button>
+      </div>
+    </div>
     <div v-if="error">{{ error }}</div>
-    <h2><u>{{ groupName }}</u></h2>
+    <h2>
+      <u>{{ groupName }}</u>
+    </h2>
     <div v-if="groupMessages" class="messages" ref="messages">
       <div v-for="doc in groupMessages" :key="doc.id">
         <div class="message-container">
@@ -38,6 +49,9 @@ export default {
     const router = useRouter();
     const { user } = getUser();
 
+    const isPrivate = ref(false);
+    const permissionEmails = ref("");
+
     // Use the useCollection utility to fetch messages for the specified group
     const { error, documents } = useCollection(
       `chatGroups/${props.groupId}/messages`
@@ -51,10 +65,62 @@ export default {
       const groupSnapshot = await groupRef.get();
       if (groupSnapshot.exists) {
         groupName.value = groupSnapshot.data().name;
+        isPrivate.value = groupSnapshot.data().isPrivate;
       }
+      console.log("getGroupName called");
     };
 
     getGroupName(); // Call the function to get the group name
+
+     // Method to update isPrivate in Firestore
+     const updateIsPrivate = async (value) => {
+      const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
+      try {
+        await groupRef.update({ isPrivate: value });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    const updateGroupPrivacy = async () => {
+      const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
+      const registeredUsersRef = groupRef.collection("registeredUsers");
+      console.log("updateGroupPrivacy called 1");
+
+      try {
+        if (isPrivate.value) {
+          // Split permissionEmails into an array of email addresses
+          const emailArray = permissionEmails.value.split(",");
+
+          // Remove any leading/trailing whitespace from email addresses
+          const cleanEmails = emailArray.map((email) => email.trim());
+
+          // Add new emails to registeredusers subcollection
+          const addEmail = cleanEmails.map(async (email) => {
+            const emailDocRef = registeredUsersRef.doc(email);
+            const emailDocSnapshot = await emailDocRef.get();
+
+            if (!emailDocSnapshot.exists) {
+              // Only add the email if it doesn't already exist
+              return emailDocRef.set({});
+            }
+
+            return null; // Email already exists, no need to add it again
+          });
+
+          await Promise.all(addEmail);
+
+          permissionEmails.value = ""; // Clear the input field
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    // Computed property to check if the user is a super admin
+    const isSuperAdmin = computed(() => {
+      return user.value && user.value.role === "superadmin";
+    });
 
     // Computed property to filter and format messages based on groupId
     const groupMessages = computed(() => {
@@ -79,7 +145,18 @@ export default {
       router.back();
     };
 
-    return { error, groupName, groupMessages, messages, goBack };
+    return {
+      error,
+      groupName,
+      groupMessages,
+      messages,
+      goBack,
+      isPrivate,
+      permissionEmails,
+      updateGroupPrivacy,
+      isSuperAdmin,
+      updateIsPrivate
+    };
   },
 };
 </script>
