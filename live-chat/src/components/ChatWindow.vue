@@ -7,7 +7,7 @@
       <div v-if="isPrivate">
         <label for="permissionEmails">Enter permission email IDs : </label>
         <input type="text" id="permissionEmails" v-model="permissionEmails" />
-        <button @click="updateGroupPrivacy">Update Group Privacy</button>
+        <button @click="updateGroupPrivacy">Add</button>
       </div>
     </div>
     <div v-if="error">{{ error }}</div>
