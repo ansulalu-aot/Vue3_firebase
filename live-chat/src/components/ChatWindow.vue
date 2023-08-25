@@ -4,6 +4,15 @@
     <div v-if="isSuperAdmin">
       <input type="radio" v-model="isPrivate" :value="false" @click="updateIsPrivate(false)" /> Public
       <input type="radio" v-model="isPrivate" :value="true" @click="updateIsPrivate(true)" /> Private
+    <div v-if="permittedEmails.length > 0">
+      <h3>Permitted Emails:</h3>
+      <ul>
+        <li v-for="(email, index) in permittedEmails" :key="email" v-show="index === 0 || isExpanded">{{ email }}
+          <button @click="deletePermittedEmail(email)">Delete</button>
+        </li>
+      </ul>
+            <button @click="toggleEmailList">{{ isExpanded ? 'Collapse' : 'Expand' }}</button>
+    </div>
       <div v-if="isPrivate">
         <label for="permissionEmails">Enter permission email IDs : </label>
         <input type="text" id="permissionEmails" v-model="permissionEmails" />
@@ -34,7 +43,7 @@
 </template>
 
 <script>
-import { computed, onUpdated, ref } from "vue";
+import { computed, onUpdated, ref, onMounted } from "vue";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "vue-router";
 import useCollection from "../composables/useCollection";
@@ -51,6 +60,9 @@ export default {
 
     const isPrivate = ref(false);
     const permissionEmails = ref("");
+
+    const permittedEmails = ref([]); // Store permitted emails
+    const isExpanded = ref(false); // Initially, the email list is collapsed
 
     // Use the useCollection utility to fetch messages for the specified group
     const { error, documents } = useCollection(
@@ -145,6 +157,49 @@ export default {
       router.back();
     };
 
+const fetchPermittedEmails = async () => {
+  try {
+    const permittedEmailsRef = projectFirestore.collection(`chatGroups/${props.groupId}/registeredUsers`);
+
+    // Fetch documents in the registeredUsers subcollection
+    const snapshot = await permittedEmailsRef.get();
+
+    // Map the documents to email addresses
+    const emails = snapshot.docs.map((doc) => doc.id);
+
+    permittedEmails.value = emails;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// Call the function to fetch permitted emails when the component mounts
+onMounted(() => {
+  if (isSuperAdmin.value) {
+    fetchPermittedEmails();
+  }
+});
+ // Function to delete a permitted email
+    const deletePermittedEmail = async (emailToDelete) => {
+    const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
+    const registeredUsersRef = groupRef.collection("registeredUsers");
+
+    try {
+      // Delete the specified email document from the subcollection
+      await registeredUsersRef.doc(emailToDelete).delete();
+
+      // Remove the email from the permittedEmails array
+      permittedEmails.value = permittedEmails.value.filter(
+        (email) => email !== emailToDelete
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+const toggleEmailList = () => {
+      isExpanded.value = !isExpanded.value; // Toggle the state
+    };
+
     return {
       error,
       groupName,
@@ -155,7 +210,11 @@ export default {
       permissionEmails,
       updateGroupPrivacy,
       isSuperAdmin,
-      updateIsPrivate
+      updateIsPrivate,
+      permittedEmails,
+      deletePermittedEmail,
+      isExpanded,
+      toggleEmailList,
     };
   },
 };

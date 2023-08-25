@@ -20,6 +20,7 @@ import getUser from "../composables/getUser";
 import { watch, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { projectFirestore } from "../firebase/config";
+import { or, where, collection, query, getDocs } from "firebase/firestore";
 
 export default {
   components: { Navbar },
@@ -36,17 +37,13 @@ export default {
         const chatGroupsCollection = projectFirestore.collection("chatGroups");
 
         // Build the query based on user permissions
-        let query = chatGroupsCollection;
+        let query = chatGroupsCollection.where("isPrivate", "==", false);
         if (user.value) {
-          if (user.value.role !== "superadmin") {
-            // Non-super admins can see public and permitted groups
-            query = query
-              .where("isPrivate", "==", false)
-              .where(`registeredUsers.${user.value.email}`, "==", true);
-          }
+         query = query.where(`registeredUsers.${user.value.email}`, "==", true);
           console.log("user.value.email :" , user.value.email)
         }
-
+ // Debug: Log the query being executed
+    console.log("Query:", query.toString());
         // Execute the query
         const snapshot = await query.get();
         chatGroups.value = snapshot.docs.map((doc) => ({
