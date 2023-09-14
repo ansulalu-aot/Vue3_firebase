@@ -1,22 +1,41 @@
 <template>
   <div class="chat-window">
     <button @click="goBack">Go Back</button>
-    <div v-if="isSuperAdmin">
-      <input type="radio" v-model="isPrivate" :value="false" @click="updateIsPrivate(false)" /> Public
-      <input type="radio" v-model="isPrivate" :value="true" @click="updateIsPrivate(true)" /> Private
-    <div v-if="permittedEmails.length > 0">
-      <h3>Permitted Emails:</h3>
-      <ul>
-        <li v-for="(email, index) in permittedEmails" :key="email" v-show="index === 0 || isExpanded">{{ email }}
-          <button @click="deletePermittedEmail(email)">Delete</button>
-        </li>
-      </ul>
-            <button @click="toggleEmailList">{{ isExpanded ? 'Collapse' : 'Expand' }}</button>
-    </div>
-      <div v-if="isPrivate">
-        <label for="permissionEmails">Enter permission email IDs : </label>
-        <input type="text" id="permissionEmails" v-model="permissionEmails" />
-        <button @click="updateGroupPrivacy">Add</button>
+    <div class="public-private">
+      <div v-if="isSuperAdmin">
+        <input
+          type="radio"
+          v-model="isPrivate"
+          :value="false"
+          @click="updateIsPrivate(false)"
+        />
+        Public
+        <input
+          type="radio"
+          v-model="isPrivate"
+          :value="true"
+          @click="updateIsPrivate(true)"
+        />
+        Private
+        <div v-if="permittedEmails.length > 0 && isPrivate" class="styling">
+          <h3>Permitted Emails:</h3>
+          <ul>
+            <li
+              v-for="(email, index) in permittedEmails"
+              :key="email"
+              v-show="index === 0 || isExpanded"
+            >
+              {{ email }}
+              <b @click="deletePermittedEmail(email)">❌</b>
+            </li>
+          </ul>
+          <b @click="toggleEmailList">{{ isExpanded ? "▼" : "▲" }}</b>
+        </div>
+        <div v-if="isPrivate">
+          <label for="permissionEmails">Enter permission email IDs : </label>
+          <input type="text" id="permissionEmails" v-model="permissionEmails" />
+          <button @click="updateGroupPrivacy">Add</button>
+        </div>
       </div>
     </div>
     <div v-if="error">{{ error }}</div>
@@ -47,7 +66,7 @@ import { computed, onUpdated, ref, onMounted } from "vue";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "vue-router";
 import useCollection from "../composables/useCollection";
-import getUser from "../composables/getUser";
+import { user, getUserRole } from "../composables/getUser";
 import { projectFirestore } from "../firebase/config";
 
 export default {
@@ -56,7 +75,7 @@ export default {
   },
   setup(props) {
     const router = useRouter();
-    const { user } = getUser();
+    // const { user } = getUser();
 
     const isPrivate = ref(false);
     const permissionEmails = ref("");
@@ -68,6 +87,17 @@ export default {
     const { error, documents } = useCollection(
       `chatGroups/${props.groupId}/messages`
     );
+
+    // Computed property to check if the user is a super admin
+    // const isSuperAdmin = computed(async () => {
+    //   try {
+    //     const userRole = await getUserRole();
+    //     return userRole === "superadmin";
+    //   } catch (error) {
+    //     console.error(error);
+    //     return false; // Handle the error and return a default value
+    //   }
+    // });
 
     // Get the group name based on groupId
     const groupName = ref("");
@@ -84,8 +114,8 @@ export default {
 
     getGroupName(); // Call the function to get the group name
 
-     // Method to update isPrivate in Firestore
-     const updateIsPrivate = async (value) => {
+    // Method to update isPrivate in Firestore
+    const updateIsPrivate = async (value) => {
       const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
       try {
         await groupRef.update({ isPrivate: value });
@@ -130,10 +160,15 @@ export default {
     };
 
     // Computed property to check if the user is a super admin
-    const isSuperAdmin = computed(() => {
-      return user.value && user.value.role === "superadmin";
-    });
+    const isSuperAdmin = computed(async () => {
+      const userRole = await getUserRole();
+      console.log("userRole :", userRole);
+      return userRole === "superadmin";
+    }); 
 
+    // Log user role and group privacy status to the console
+    console.log("User is super admin:", isSuperAdmin);
+    console.log("Group is private:", isPrivate);
     // Computed property to filter and format messages based on groupId
     const groupMessages = computed(() => {
       if (documents.value && user.value) {
@@ -157,46 +192,48 @@ export default {
       router.back();
     };
 
-const fetchPermittedEmails = async () => {
-  try {
-    const permittedEmailsRef = projectFirestore.collection(`chatGroups/${props.groupId}/registeredUsers`);
+    const fetchPermittedEmails = async () => {
+      try {
+        const permittedEmailsRef = projectFirestore.collection(
+          `chatGroups/${props.groupId}/registeredUsers`
+        );
 
-    // Fetch documents in the registeredUsers subcollection
-    const snapshot = await permittedEmailsRef.get();
+        // Fetch documents in the registeredUsers subcollection
+        const snapshot = await permittedEmailsRef.get();
 
-    // Map the documents to email addresses
-    const emails = snapshot.docs.map((doc) => doc.id);
+        // Map the documents to email addresses
+        const emails = snapshot.docs.map((doc) => doc.id);
 
-    permittedEmails.value = emails;
-  } catch (error) {
-    console.error(error);
-  }
-};
+        permittedEmails.value = emails;
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-// Call the function to fetch permitted emails when the component mounts
-onMounted(() => {
-  if (isSuperAdmin.value) {
-    fetchPermittedEmails();
-  }
-});
- // Function to delete a permitted email
+    // Call the function to fetch permitted emails when the component mounts
+    onMounted(() => {
+      if (isSuperAdmin) {
+        fetchPermittedEmails();
+      }
+    });
+    // Function to delete a permitted email
     const deletePermittedEmail = async (emailToDelete) => {
-    const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
-    const registeredUsersRef = groupRef.collection("registeredUsers");
+      const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
+      const registeredUsersRef = groupRef.collection("registeredUsers");
 
-    try {
-      // Delete the specified email document from the subcollection
-      await registeredUsersRef.doc(emailToDelete).delete();
+      try {
+        // Delete the specified email document from the subcollection
+        await registeredUsersRef.doc(emailToDelete).delete();
 
-      // Remove the email from the permittedEmails array
-      permittedEmails.value = permittedEmails.value.filter(
-        (email) => email !== emailToDelete
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  };
-const toggleEmailList = () => {
+        // Remove the email from the permittedEmails array
+        permittedEmails.value = permittedEmails.value.filter(
+          (email) => email !== emailToDelete
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    const toggleEmailList = () => {
       isExpanded.value = !isExpanded.value; // Toggle the state
     };
 
@@ -258,5 +295,18 @@ const toggleEmailList = () => {
 .receiver {
   align-self: flex-start;
   background-color: #f3f3f3;
+}
+.public-private {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+}
+.styling {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+b {
+  cursor: pointer;
 }
 </style>

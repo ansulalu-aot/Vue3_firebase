@@ -11,7 +11,7 @@
 
 <script>
 import { ref } from "vue";
-import getUser from "../composables/getUser";
+import { user } from "../composables/getUser";
 import useCollection from "../composables/useCollection";
 import { timestamp } from "../firebase/config";
 
@@ -20,7 +20,7 @@ export default {
     groupId: String,
   },
   setup(props) {
-    const { user } = getUser();
+    // const { user } = getUser();
     const { addDoc, error } = useCollection("chatGroups", "messages");
     const message = ref("");
 
