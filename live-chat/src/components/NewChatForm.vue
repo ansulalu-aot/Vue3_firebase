@@ -20,7 +20,6 @@ export default {
     groupId: String,
   },
   setup(props) {
-    // const { user } = getUser();
     const { addDoc, error } = useCollection("chatGroups", "messages");
     const message = ref("");
 

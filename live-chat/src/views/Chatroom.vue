@@ -17,7 +17,6 @@ import { useRouter } from "vue-router";
 export default {
   components: { Navbar, NewChatForm, ChatWindow },
   setup() {
-    // const { user } = getUser();
     const router = useRouter();
     const groupId = router.currentRoute.value.params.groupId;
 

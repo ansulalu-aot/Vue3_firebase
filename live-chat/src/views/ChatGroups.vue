@@ -32,47 +32,31 @@ export default {
     // Fetch chat groups based on user permissions
     const fetchChatGroups = async () => {
       try {
-        console.log("Fetching chat groups...");
         const chatGroupsCollection = projectFirestore.collection("chatGroups");
         const queryPromises = [];
 
         if (user.value) {
-          console.log("user : ", user);
-          console.log("user.value : ", user.value);
           // Use async/await to get the user's role
           const userRole = await getUserRole();
 
-          console.log("User role:", userRole);
-
           // If the user is a superadmin, fetch all groups
           if (userRole === "superadmin") {
-            console.log("all");
             queryPromises.push(
               chatGroupsCollection.get().then((querySnapshot) => {
                 const allGroups = [];
 
                 querySnapshot.forEach((doc) => {
                   if (doc.exists) {
-                    console.log(`Document ID: ${doc.id}`);
-                    console.log("Document Data:", doc.data());
                     allGroups.push({
                       ...doc.data(),
                       id: doc.id,
                     });
                   }
                 });
-
-                console.log("All Groups:", allGroups);
                 return allGroups;
               })
             );
           } else {
-            console.log("private");
-            console.log(
-              "Fetching permitted private groups for user:",
-              user.value.email
-            );
-
             // Fetch public groups
             queryPromises.push(
               chatGroupsCollection
@@ -84,15 +68,12 @@ export default {
                   // Iterate through the query results for public groups
                   querySnapshot.forEach((doc) => {
                     if (doc.exists) {
-                      console.log(`Document ID: ${doc.id}`);
-                      console.log("Document Data:", doc.data());
                       publicGroups.push({
                         ...doc.data(),
                         id: doc.id,
                       });
                     }
                   });
-                  console.log("Permitted Public Groups:", publicGroups);
                   return publicGroups;
                 })
             );
@@ -107,35 +88,23 @@ export default {
 
                 for (const doc of querySnapshot.docs) {
                   const groupId = doc.id;
-                  console.log("groupId : ", groupId);
-
                   // Check if there is a corresponding document in registeredUsers
                   const registeredUserDocRef = projectFirestore
                     .collection("chatGroups")
                     .doc(groupId)
                     .collection("registeredUsers")
                     .doc(user.value.email);
-                  console.log("registeredUserDocRef :", registeredUserDocRef);
                   const registeredUserDoc = await registeredUserDocRef.get();
-                  console.log("Checking registeredUserDoc for group:", groupId);
 
                   if (registeredUserDoc.exists) {
                     // The user has access to this private group
-                    console.log(`User has access to group: ${groupId}`);
                     permittedGroups.push({
                       ...doc.data(),
                       id: groupId,
                     });
-                    console.log("docData :", doc.data());
-                  } else {
-                    // The user does not have access to this private group
-                    console.log(
-                      `User does not have access to group: ${groupId}`
-                    );
                   }
                 }
 
-                console.log("Permitted Private Groups:", permittedGroups);
                 return permittedGroups;
               })()
             );
@@ -143,17 +112,12 @@ export default {
         }
 
         const queryResults = await Promise.all(queryPromises);
-        console.log("Permitted groups query results:", queryResults);
         // Concatenate and map the results
         const Groups = [].concat.apply([], queryResults);
         const groups = Groups.map((doc) => ({
           ...doc,
         }));
-        console.log("groups: ", groups);
-        console.log("User email:", user.value.email);
-        console.log("Query results:", queryResults);
         chatGroups.value = groups;
-        console.log("Chat groups:", chatGroups.value);
       } catch (err) {
         console.error(err.message);
         error.value = "Could not fetch chat groups.";
@@ -162,9 +126,6 @@ export default {
 
     // Watch for changes in user and fetch chat groups accordingly
     watch(user, () => {
-      console.log("Number of chat groups:", chatGroups.value.length);
-      console.log("Chat groups content:", chatGroups.value);
-      console.log("User changed:", user.value);
       chatGroups.value = []; // Clear existing chat groups
       error.value = null; // Clear error
 

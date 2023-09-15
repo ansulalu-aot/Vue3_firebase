@@ -2,7 +2,7 @@
   <div class="chat-window">
     <button @click="goBack">Go Back</button>
     <div class="public-private">
-      <div v-if="isSuperAdmin">
+      <div v-if="superAdmin === 'superadmin'">
         <input
           type="radio"
           v-model="isPrivate"
@@ -75,33 +75,19 @@ export default {
   },
   setup(props) {
     const router = useRouter();
-    // const { user } = getUser();
-
     const isPrivate = ref(false);
     const permissionEmails = ref("");
-
     const permittedEmails = ref([]); // Store permitted emails
     const isExpanded = ref(false); // Initially, the email list is collapsed
+    const superAdmin = ref("");
+    const groupName = ref("");
 
     // Use the useCollection utility to fetch messages for the specified group
     const { error, documents } = useCollection(
       `chatGroups/${props.groupId}/messages`
     );
 
-    // Computed property to check if the user is a super admin
-    // const isSuperAdmin = computed(async () => {
-    //   try {
-    //     const userRole = await getUserRole();
-    //     return userRole === "superadmin";
-    //   } catch (error) {
-    //     console.error(error);
-    //     return false; // Handle the error and return a default value
-    //   }
-    // });
-
     // Get the group name based on groupId
-    const groupName = ref("");
-
     const getGroupName = async () => {
       const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
       const groupSnapshot = await groupRef.get();
@@ -109,7 +95,6 @@ export default {
         groupName.value = groupSnapshot.data().name;
         isPrivate.value = groupSnapshot.data().isPrivate;
       }
-      console.log("getGroupName called");
     };
 
     getGroupName(); // Call the function to get the group name
@@ -127,7 +112,6 @@ export default {
     const updateGroupPrivacy = async () => {
       const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
       const registeredUsersRef = groupRef.collection("registeredUsers");
-      console.log("updateGroupPrivacy called 1");
 
       try {
         if (isPrivate.value) {
@@ -159,16 +143,6 @@ export default {
       }
     };
 
-    // Computed property to check if the user is a super admin
-    const isSuperAdmin = computed(async () => {
-      const userRole = await getUserRole();
-      console.log("userRole :", userRole);
-      return userRole === "superadmin";
-    }); 
-
-    // Log user role and group privacy status to the console
-    console.log("User is super admin:", isSuperAdmin);
-    console.log("Group is private:", isPrivate);
     // Computed property to filter and format messages based on groupId
     const groupMessages = computed(() => {
       if (documents.value && user.value) {
@@ -187,6 +161,7 @@ export default {
         messages.value.scrollTop = messages.value.scrollHeight;
       }
     });
+
     // to navigate back in history
     const goBack = () => {
       router.back();
@@ -211,11 +186,13 @@ export default {
     };
 
     // Call the function to fetch permitted emails when the component mounts
-    onMounted(() => {
-      if (isSuperAdmin) {
+    onMounted(async () => {
+      superAdmin.value = await getUserRole();
+      if (superAdmin.value === "superadmin") {
         fetchPermittedEmails();
       }
     });
+
     // Function to delete a permitted email
     const deletePermittedEmail = async (emailToDelete) => {
       const groupRef = projectFirestore.doc(`chatGroups/${props.groupId}`);
@@ -246,12 +223,12 @@ export default {
       isPrivate,
       permissionEmails,
       updateGroupPrivacy,
-      isSuperAdmin,
       updateIsPrivate,
       permittedEmails,
       deletePermittedEmail,
       isExpanded,
       toggleEmailList,
+      superAdmin,
     };
   },
 };
